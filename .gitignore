@@ -1,0 +1,55 @@
+# Environment variables. But keep the templates.
+/.envs/
+/.env
+!/.envs/*.template
+!/.env.template
+
+# Runtime files.
+/var/
+
+# Python.
+__pycache__/
+.venv/
+*.py[cod]
+
+# Gettext.
+*.mo
+*.pot
+
+# Build, cache, logs, reports, system…
+.npm/
+.sass-cache/
+.tox/
+bower_components/
+build/
+develop-eggs/
+dist/
+docs/_build/
+eggs/
+htmlcov/
+node_modules/
+sdist/
+*.egg-info/
+.cache
+.coverage
+.coverage.*
+coverage.xml
+npm-debug.log*
+pip-log.txt
+*.egg
+*.log
+*.sw[op]
+
+# Vim.
+[._]s[a-v][a-z]
+[._]sw[a-p]
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+
+# OS.
+._*
+.DS_Store
+.Trash-*
+Thumbs.db
+*.lnk
+*~

@@ -1,0 +1,692 @@
+"""Base application settings shared by all application modes (or at least by most of them).
+
+Each application mode has its own file for its specific settings.
+
+- [Settings documentation](https://docs.djangoproject.com/en/3.1/topics/settings/)
+- [Settings reference](https://docs.djangoproject.com/en/3.1/ref/settings/)
+- [Default settings](https://github.com/django/django/blob/3.1.5/django/conf/global_settings.py)
+- [Deployment checklist](https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/)
+"""
+from pathlib import Path
+
+from django.utils.text import capfirst
+from django.utils.translation import gettext_lazy as _
+
+import environ
+
+
+# We are in the `/config/settings` directory.
+BASE_DIR = Path(__file__).resolve(strict=True).parents[2]
+
+
+# ENVIRONMENT VARIABLES ============================================================================
+
+# pip:django-environ
+# Load environment variables defined in `.env` files.
+# Doc: https://django-environ.readthedocs.io/
+env = environ.Env()
+env.read_env(str(BASE_DIR / ".envs/.env.app"))
+env.read_env(str(BASE_DIR / ".envs/.env.postgres"))
+
+# Define the application mode in which we are running.
+# Value: `local|testing|development|staging|production`.
+# Default: No default value to never be "silently wrong".
+# Remark: This is not a Django setting.
+APP_MODE = env("APP_MODE")  # Raises an exception if it doesn't exist.
+
+
+# PROJECT CONSTANTS ================================================================================
+# Remark: These are not Django settings.
+
+# Name of the project in different formats.
+#   Name: Displayed to users. Format: `Title Case`. Example: `My App`.
+#   Slug: Project identifier in `lower-dash-case`. Example: `my-app`.
+#     Used in: Human ID, URLs, Docker objects name.
+#   Snake: Short project identifier in `lower_snake_case`. Example: `my_app`.
+#     Used in: main Python package, variable names, database objects.
+PROJECT_NAME = "[[ PROJECT_NAME ]]"
+PROJECT_SLUG = "[[ PROJECT_SLUG ]]"
+PROJECT_SNAKE = "[[ PROJECT_SNAKE ]]"
+PROJECT_SLUG_WITH_ENV = f"{PROJECT_SLUG}.{APP_MODE[:3]}"
+
+
+# APPS =============================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/ref/applications/
+# Best Practice: Specify the dotted path to the app config class, avoid using `default_app_config`.
+
+PROJECT_APPS = [
+]
+THIRD_PARTY_APPS = [
+    "admin_honeypot",                  # pip:django-admin-honeypot
+    "django_extensions",               # pip:django-extensions
+    "reversion",                       # pip:django-reversion
+]
+DJANGO_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    # "django.contrib.sitemaps",
+    "django.contrib.staticfiles",
+]
+POST_DJANGO_APPS = [
+]
+
+# `INSTALLED_APPS = PROJECT_APPS + THIRD_PARTY_APPS + DJANGO_APPS + POST_DJANGO_APPS`.
+# Create it using `INSTALLED_APPS = build_installed_apps()` at the end of each application mode
+#   settings file, so that these `*_APPS` can be modified elsewhere in the settings files
+#   (for example in the settings of a given application mode).
+# Warning: The order may be important.
+#   When several applications provide different versions of the same resource,
+#     the application listed first has precedence.
+#   And some third-party apps require to be defined before some Django apps.
+#   For example, `django-modeltranslation` must come before `django.contrib.admin`.
+build_installed_apps = lambda: PROJECT_APPS + THIRD_PARTY_APPS + DJANGO_APPS + POST_DJANGO_APPS
+
+
+# MIDDLEWARES ======================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/http/middleware/
+# Ref: https://docs.djangoproject.com/en/3.1/ref/middleware/
+
+# Hooks into Django's request/response processing.
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "csp.middleware.CSPMiddleware",                             # pip:django-csp
+    "whitenoise.middleware.WhiteNoiseMiddleware",               # pip:whitenoise
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+
+# MAIN FILESYSTEM PATHS ============================================================================
+# .                        BASE_DIR
+# ├─ [[ "%- 20s" % PROJECT_SNAKE ]]  PACKAGE_DIR
+# ├─ config                CONFIG_DIR
+# │   ├─ formats           (used in Django's `FORMAT_MODULE_PATH`)
+# │   └─ settings          you are here
+# ├─ locale                LOCALE_DIR (used in Django's `LOCALE_PATHS`)
+# ├─ src                   SRC_DIR
+# │   ├─ fixtures          FIXTURES_DIR (used in Django's `FIXTURE_DIRS`)
+# │   └─ static            (static sources, compiled into STATIC_DIR)
+# ├─ static                STATIC_DIR (used in Django's `STATICFILES_DIRS`)
+# ├─ templates             TEMPLATES_DIR (used in Django's `TEMPLATES`)
+# └─ var                   VAR_DIR
+#     ├─ cache             CACHE_ROOT
+#     ├─ files             Django's `MEDIA_ROOT`
+#     ├─ log               LOG_ROOT
+#     └─ static            Django's `STATIC_ROOT`
+#
+# Best Practices:
+#   - Always use Unix-style forward slashes, even on Windows.
+#   - Always use absolute filesystem path.
+#   - Use the suffix `_ROOT` for writable locations and `_DIR` for others.
+
+# Absolute filesystem path to the main directories.
+# Remark: These are not Django settings.
+# BASE_DIR = ...defined at the beginning of this file.
+PACKAGE_DIR = BASE_DIR / PROJECT_SNAKE
+CONFIG_DIR = BASE_DIR / "config"
+LOCALE_DIR = BASE_DIR / "locale"
+# // SRC_DIR = BASE_DIR / "src"
+# // FIXTURES_DIR = SRC_DIR / "fixtures"
+STATIC_DIR = BASE_DIR / "static"        # /!\ This is NOT Django's `STATIC_ROOT`!
+TEMPLATES_DIR = BASE_DIR / "templates"
+VAR_DIR = BASE_DIR / "var"              # Runtime files.
+CACHE_ROOT = VAR_DIR / "cache"
+MEDIA_ROOT = VAR_DIR / "files"          # Django setting.
+LOG_ROOT = VAR_DIR / "log"
+STATIC_ROOT = VAR_DIR / "static"        # Django setting.
+
+
+# FILESYSTEM =======================================================================================
+# Best Practices:
+#   - Always use Unix-style forward slashes, even on Windows.
+#   - Always use absolute filesystem path.
+
+# List of directories where Django looks for translation files.
+LOCALE_PATHS = [LOCALE_DIR]
+
+# Absolute filesystem path to the directory that will hold user-uploaded files.
+# Doc: https://docs.djangoproject.com/en/3.1/topics/files/
+# MEDIA_ROOT = ...defined above in the "MAIN FILESYSTEM PATHS" section.
+
+# Absolute filesystem path to the directory static files should be collected to.
+# Warning: Don't store your static files in this directory yourself, do that in directories
+#   that will be found by staticfiles's finders. See: `STATICFILES_DIRS` below.
+# Doc: https://docs.djangoproject.com/en/3.1/howto/static-files/
+# STATIC_ROOT = ...defined above in the "MAIN FILESYSTEM PATHS" section.
+
+# Additional locations (absolute filesystem paths) of static files.
+# See also: `STATICFILES_FINDERS`.
+STATICFILES_DIRS = [STATIC_DIR]
+
+# List of directories searched for fixture files, in addition to the
+# fixtures directory of each application. Defined in search order.
+# // FIXTURE_DIRS = (
+# //     FIXTURES_DIR,
+# //     FIXTURES_DIR / APP_MODE,
+# // )
+
+
+# URLS =============================================================================================
+# /!\ CONVENTION: Paths must start without leading slash and end with a trailing slash.
+# Best Practice: For paths, use only `[a-z\-/]` (i.e. all lowercase and only "-" and "/").
+
+# Main URL for the site.
+# Remark: These are not Django settings.
+SITE_URL = env("SITE_URL")
+site_chunks = env.url("SITE_URL")  # Temporary variable, deleted below.
+SITE_PROTOCOL = site_chunks.scheme
+SITE_DOMAIN = site_chunks.hostname
+SITE_PORT = site_chunks.port
+del site_chunks  # Delete temporary variable.
+
+# Full Python import path to the root URLconf.
+ROOT_URLCONF = "config.urls"
+
+# Whether to redirect to the same URL with a slash appended if the requested
+# URL does not match any of the URL patterns and it doesn't end in a slash.
+# // APPEND_SLASH = False
+
+# URL that handles the user-uploaded files served from `MEDIA_ROOT`.
+# /!\ The web server must use this value. If Dockerized, see `/docker/nginx/conf.d/default.conf`.
+# Examples: `files/`, `https://example.com/f/`, `https://uploads.example.com/`
+MEDIA_URL = "f/"
+
+# URL that handles the static files served from `STATIC_ROOT`.
+# /!\ The web server must use this value. If Dockerized, see `/docker/nginx/conf.d/default.conf`.
+# Examples: `static/`, `https://example.com/s/`, `https://static.example.com/`
+STATIC_URL = "s/"
+
+# Base URL for the admin interface.
+# /!\ SECURITY: Avoid the default "admin/".
+# See: https://github.com/dmpayton/django-admin-honeypot
+# Remark: This is not a Django setting.
+ADMIN_BASE_URL = env("ADMIN_BASE_URL", default=None)
+if ADMIN_BASE_URL:
+    ADMIN_BASE_URL = ADMIN_BASE_URL.strip("/") + "/"
+
+# Base URL for sitemaps (to prevent malicious use of the page list).
+# Remark: This is not a Django setting.
+SITEMAPS_BASE_URL = env("SITEMAPS_BASE_URL", default=None)
+if SITEMAPS_BASE_URL:
+    SITEMAPS_BASE_URL = SITEMAPS_BASE_URL.strip("/") + "/"
+
+
+# AUTH =============================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/auth/
+
+# The model to use to represent a User (i.e. our custom user model).
+# TODO: AUTH_USER_MODEL = "dj_accounts.User"  # pip:django-accounts
+
+# The URL where requests are redirected for and after login.
+# These are named URL pattern, as defined in `urlpatterns`. See `config.urls`.
+#   1. To the login page, especially when using the `login_required()` decorator.
+#   2. After login when the `contrib.auth.login` view gets no `next` parameter.
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "home"
+
+# The number of days a password reset link is valid for.
+# Used by the `django.contrib.auth` password reset mechanism.
+PASSWORD_RESET_TIMEOUT_DAYS = 7
+
+# List of hashing algorithm classes supported by this project.
+# The first entry is used to store passwords, and all the other entries are
+#   valid hashers that can be used to check existing passwords.
+# /!\ SECURITY: Argon2 is the winner of the 2015 Password Hashing Competition.
+# Doc: https://docs.djangoproject.com/en/3.1/topics/auth/passwords/
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",  # pip:argon2-cffi
+]
+
+# List of validators that are used to check the strength of user's passwords.
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+# List of authentication backend classes (as strings) to use when attempting to authenticate a user.
+# // AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
+
+
+# CACHE ============================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/cache/
+
+# Dictionary containing the settings for all caches to be used with Django.
+# Default: `LocMemCache` (local memory).
+# Ref: https://docs.djangoproject.com/en/3.1/ref/settings/#caches
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": CACHE_ROOT,
+    },
+}
+
+# The cache timeout for sitemaps (in seconds).
+# Remark: This is not a Django setting.
+SITEMAPS_CACHE_TIMEOUT = 43200  # 12 hours
+
+
+# DATABASE =========================================================================================
+# Ref: https://docs.djangoproject.com/en/3.1/ref/settings/#databases
+
+# Dictionary containing the settings for all databases to be used with Django.
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("POSTGRES_DB", default=PROJECT_SNAKE),
+        "USER": env("POSTGRES_USER", default=PROJECT_SNAKE),
+        "PASSWORD": env("POSTGRES_PASSWORD"),
+        "HOST": env("POSTGRES_HOST", default="localhost"),
+        "PORT": env("POSTGRES_PORT", default=None),
+        "ATOMIC_REQUESTS": env.bool("POSTGRES_ATOMIC_REQUESTS", default=True),
+    },
+    # // "default": {
+    # //     **env.db("DB_DEFAULT_URL"),
+    # //     "ATOMIC_REQUESTS": env.bool("DB_DEFAULT_ATOMIC_REQUESTS", default=True),
+    # // },
+}
+
+# Dictionary specifying the package where migration modules can be found on a per-app basis.
+# // MIGRATION_MODULES = {}
+
+
+# EMAIL ============================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/email/
+
+# Main domain for emails.
+EMAIL_DOMAIN = env("EMAIL_DOMAIN", default=SITE_DOMAIN)
+
+# Load SMTP configuration from environment variable.
+if env("SMTP_URL", default=None):
+    vars().update(env.email("SMTP_URL"))
+
+# Email address that error messages come from.
+# Note: Only error messages not regular emails.
+SERVER_EMAIL = f"{PROJECT_NAME} Server <server@{EMAIL_DOMAIN}>"
+
+# Default sender email address.
+DEFAULT_FROM_EMAIL = SERVER_EMAIL
+
+# Subject-line prefix for email messages send with
+#   `django.core.mail.mail_admins` or `django.core.mail.mail_managers`.
+# Warning: Make sure to include the trailing space.
+EMAIL_SUBJECT_PREFIX = f"[{PROJECT_SLUG_WITH_ENV}]" + " "
+
+# Email of support team. Displayed on error 500 page.
+# Remark: This is not a Django setting.
+SUPPORT_EMAIL = f"support@{EMAIL_DOMAIN}"
+
+
+# INTERNATIONALIZATION =============================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/i18n/
+# Time Zones Ref: https://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+# Locale name: `en`, `fr_BE`, `sr_Latn`.
+# Language code: `en`, `fr-be`.
+
+# Whether Django's translation system should be enabled.
+USE_I18N = True
+
+# Whether localized formatting of data should be enabled.
+# When enabled, Django formats dates, numbers and calendars according to the current locale.
+USE_L10N = False
+
+# Whether datetimes should be timezone-aware.
+USE_TZ = True
+
+# Default time zone, for the system and users.
+# Remark: These are not Django settings.
+DEFAULT_SYSTEM_TIME_ZONE = "UTC"
+DEFAULT_USER_TIME_ZONE = "[[ USER_TIME_ZONE ]]"
+
+# Default time zone that Django will use to display datetimes in templates
+#   and to interpret datetimes entered in forms.
+# Not all choices may be available on all operating systems.
+# In a Windows environment this must be set to your system time zone.
+TIME_ZONE = DEFAULT_USER_TIME_ZONE
+
+# Specify which languages are available for language selection.
+# Format: `(language code, language name)`.
+# Examples: `("en", _("English"))`, `("fr-be", _("French (Belgium)"))`.
+LANGUAGES = [
+    ("en", _("English")),
+    # // ("fr", _("French")),
+]
+
+# Default language code, for the system and users.
+# Remark: These are not Django settings.
+DEFAULT_SYSTEM_LANGUAGE_CODE = "en"
+DEFAULT_USER_LANGUAGE_CODE = "[[ USER_LANGUAGE_CODE ]]"
+
+# Language code for this installation.
+LANGUAGE_CODE = DEFAULT_USER_LANGUAGE_CODE
+
+# Name of the cookie to use for the language cookie.
+# This can be whatever you want (but should be different from `SESSION_COOKIE_NAME`).
+LANGUAGE_COOKIE_NAME = "lg"
+LANGUAGE_COOKIE_AGE = 2592000  # 30 days
+
+# See also the "THIRD PARTY APPS" section below for:
+#   `django-modeltranslation`, `django-rosetta`
+
+# Full Python path to a Python package that contains format definitions for project locales.
+# See the "FORMATS LOCALIZATION" section below for default/global settings.
+# // FORMAT_MODULE_PATH = "config.formats"
+
+
+# LOCALIZATION =====================================================================================
+# Default formats, used if `USE_L10N` is deactivated.
+# See: `FORMAT_MODULE_PATH` to create formats for each `LANGUAGES`.
+
+# Numbers.
+DECIMAL_SEPARATOR = ","
+MONEY_FORMAT = "a C"
+NUMBER_GROUPING = 3
+THOUSAND_SEPARATOR = "."
+USE_THOUSAND_SEPARATOR = True
+
+# Dates.
+DATE_FORMAT = "d/m/Y"
+DATE_INPUT_FORMATS = ["%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%y-%m-%d", "%Y%m%d", "%y%m%d"]
+FIRST_DAY_OF_WEEK = 1
+MONTH_DAY_FORMAT = "j F"
+SHORT_DATE_FORMAT = "d/m/y"
+YEAR_MONTH_FORMAT = "F Y"
+
+# Times.
+TIME_FORMAT = "H:i"
+TIME_INPUT_FORMATS = ["%H:%M:%S", "%H:%M", "%H%M%S", "%H%M"]
+
+# Date/times.
+DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
+DATETIME_INPUT_FORMATS = []
+for d in DATE_INPUT_FORMATS:
+    for t in TIME_INPUT_FORMATS:
+        DATETIME_INPUT_FORMATS.append(f"{d} {t}")
+SHORT_DATETIME_FORMAT = f"{SHORT_DATE_FORMAT} {TIME_FORMAT}"
+
+
+# LOGGING ==========================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/logging/
+
+# Logging config (loggers, handlers, filters and formatters).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+    },
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[\%(server_time)s] %(message)s",
+        },
+        "simple": {
+            "format": "%(levelname)s %(asctime)s %(message)s",
+        },
+        "verbose": {
+            "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+        },
+        "django.server": {
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+            "level": "INFO",
+        },
+        "file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": LOG_ROOT / "django-error.log",
+            "filters": ["require_debug_false"],
+            "level": "ERROR",
+            "when": "midnight",
+        },
+        "mail_admins": {
+            "class": "django.utils.log.AdminEmailHandler",
+            "filters": ["require_debug_false"],
+            "level": "ERROR",
+            "include_html": False,  # /!\ SECURITY: HTML version contains full traceback,
+                                    # /!\ so potentially very sensitive information.
+        },
+        "null": {
+            "class": "logging.NullHandler",
+            "level": "DEBUG",
+        },
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["console"],
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["null"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["console", "mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        PROJECT_SNAKE: {
+            "handlers": ["console", "mail_admins"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
+
+# People who get code error notifications.
+ADMINS = [("[[ AUTHOR_NAME ]]", f"[[ AUTHOR_EMAIL|replace('@', '+{PROJECT_SLUG}@') ]]")]
+MANAGERS = ADMINS
+
+
+# SECURITY =========================================================================================
+# Best Practices: https://www.12factor.net/
+# Ref: https://docs.djangoproject.com/en/3.1/ref/middleware/#module-django.middleware.security
+# Content-Security-Policy Doc: https://django-csp.readthedocs.io/
+
+# Secret key for a particular Django installation.
+# This is used to provide cryptographic signing, and should be set to a unique, unpredictable value.
+# Warning: If you rotate your secret key, sessions, messages, reset password tokens,
+#   and all cryptographic signing will be invalidated.
+#   Secret keys are not used for passwords of users and key rotation will not affect them.
+# Command: `./manage.py generate_secret_key` (requires `django-extensions`)
+# /!\ SECURITY: Running Django with a known `SECRET_KEY` defeats many of Django's security
+# /!\ protections, and can lead to privilege escalation and remote code execution vulnerabilities.
+SECRET_KEY = env("SECRET_KEY")
+
+# Host/domain names that this Django site can serve.
+# Default: Allow this domain and its subdomains.
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[SITE_DOMAIN])
+
+# Whether to enable the XSS filter in the browser,
+#   and force it to always block suspected XSS attacks.
+# Sets the `X-XSS-Protection: 1; mode=block` header on all responses that do not already have it.
+SECURE_BROWSER_XSS_FILTER = True
+
+# Whether to prevent the browser from guessing the content type
+#   and force it to always use the `Content-Type` header.
+# Sets the `X-Content-Type-Options: nosniff` header on all responses that do not already have it.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Allow to control the value of the `Referer` header.
+# Sets the `Referrer-Policy` header on all responses that do not already have it.
+# Ref: https://docs.djangoproject.com/en/3.1/ref/middleware/#referrer-policy
+# As defined: `strict-origin-when-cross-origin`:
+#   To same origin: full URL. To cross-origin: only the origin.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# Indicate whether a browser is allowed to render a page in a
+#   `<frame>`, `<iframe>`, `<embed>`, or `<object>`.
+# Sets the `X-Frame-Options` header.
+# Default: `SAMEORIGIN`.
+X_FRAME_OPTIONS = "DENY"
+
+# Enable/disable certain web platform features on this site and those embedded.
+# Sets the `Feature-Policy` header on all responses that do not already have it.
+# TODO: Requires: `dj_guitar.middlewares.SecurityMiddleware`.  # pip:django-guitar
+# Ref: https://github.com/w3c/webappsec-permissions-policy/blob/master/features.md
+FEATURE_POLICY = {
+    "usb": "none",
+    "camera": "none",
+    "microphone": "none",
+    "midi": "none",
+    "payment": "none",
+    "speaker": "none",
+}
+
+# Settings related to HTTPS…
+if SITE_PROTOCOL == "https":
+    # Whether to use a secure cookie for the session and CSRF cookies.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # Let's tell browsers that it should only be accessed using HTTPS, instead of using HTTP.
+    # Sets the `Strict-Transport-Security` header (often abbreviated as HSTS).
+    SECURE_HSTS_SECONDS = 31536000  # 365 days.
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+    # Whether to redirect all non-HTTPS requests to HTTPS.
+    # Note: If you're running behind a proxy, check `SECURE_PROXY_SSL_HEADER`.
+    SECURE_SSL_REDIRECT = True
+
+# See also the "THIRD PARTY APPS" section below for: `django-csp`.`
+
+
+# SESSION ==========================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/http/sessions/
+
+# Name of the cookie to use for sessions.
+# Format: alphanumerics and underscores.
+SESSION_COOKIE_NAME = PROJECT_SNAKE
+
+# The age of session cookies, in seconds.
+SESSION_COOKIE_AGE = 86400  # 24 hours
+
+# Whether to expire the session when the user closes his or her browser.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+
+# TEMPLATES ========================================================================================
+# Doc: https://docs.djangoproject.com/en/3.1/topics/templates/
+
+# A list containing the settings for all template engines to be used with Django.
+TEMPLATES = [{
+    "BACKEND": "django.template.backends.django.DjangoTemplates",
+    "DIRS": [  # Directories of template source files, in search order.
+        TEMPLATES_DIR,
+        TEMPLATES_DIR / "errors",  # For our `<status_code>.html` pages.
+    ],
+    "APP_DIRS": True,
+    "OPTIONS": {
+        "context_processors": [
+            "django.template.context_processors.debug",
+            "django.template.context_processors.request",
+            "django.contrib.auth.context_processors.auth",
+            "django.template.context_processors.i18n",
+            "django.template.context_processors.media",
+            "django.template.context_processors.static",
+            "django.template.context_processors.tz",
+            "django.contrib.messages.context_processors.messages",
+        ],
+    },
+}]
+
+
+# THIRD PARTY APPS =================================================================================
+
+# pip:django-csp -----------------------------------------------------------------------------------
+# Ref: https://django-csp.readthedocs.io/en/latest/configuration.html
+
+# Configuration for the `Content-Security-Policy` header.
+CSP_FONT_SRC = ["'self'", "data:", "fonts.gstatic.com"]
+CSP_FRAME_SRC = ["'self'", "*"]
+CSP_IMG_SRC = ["'self'", "data:"]
+CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.google-analytics.com",
+                  "unpkg.com"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "unpkg.com"]
+CSP_CONNECT_SRC = ["'self'", "*.google-analytics.com"]
+
+
+# pip:django-modeltranslation ----------------------------------------------------------------------
+# Ref: https://django-modeltranslation.readthedocs.io/en/latest/installation.html#configuration
+
+# Override the default language for `modeltranslation`.
+# Note: This value has to be in `LANGUAGES`.
+MODELTRANSLATION_DEFAULT_LANGUAGE = DEFAULT_USER_LANGUAGE_CODE
+
+# Order of fallback languages.
+if len(LANGUAGES) > 1:
+    MODELTRANSLATION_FALLBACK_LANGUAGES = [lg[0] for lg in LANGUAGES]
+
+
+# pip:easy-thumbnails ------------------------------------------------------------------------------
+# Ref: https://easy-thumbnails.readthedocs.io/en/latest/ref/settings/
+
+THUMBNAIL_BASEDIR = "th"
+THUMBNAIL_QUALITY = 95  # Best, above 95 is not recommended.
+
+# For retina displays.
+# // THUMBNAIL_HIGHRES_INFIX = "_2x"
+# // THUMBNAIL_HIGH_RESOLUTION = True
+
+# Optimization: Only in staging and production modes.
+
+# Dimensions.
+# // THUMBNAIL_ALIASES = {
+# //     "<module>.<Model>.<field>": {
+# //         "<alias>": {"size": (<width>, <height>), "crop": "smart", "bw": True},
+# //     },
+# // }
+
+
+# DEBUGGING ========================================================================================
+
+DEBUG = env.bool("DJANGO_DEBUG", default=APP_MODE in ["local", "development"])
+
+if DEBUG:
+    # Set template debug mode for all template engines.
+    for i, v in enumerate(TEMPLATES):
+        TEMPLATES[i]["OPTIONS"]["debug"] = True
+        if ("django.template.context_processors.debug"
+            not in TEMPLATES[i]["OPTIONS"]["context_processors"]
+        ):
+            TEMPLATES[i]["OPTIONS"]["context_processors"].append(
+                "django.template.context_processors.debug"
+            )
+
+    # IP addresses allowed to view debugging information.
+    INTERNAL_IPS = env.list("DJANGO_INTERNAL_IPS", default=["127.0.0.1"])
+
+    # django.contrib.admindocs
+    # Documentation from the docstrings of models, views, template tags,
+    #   and template filters for any installed app.
+    # Doc: https://docs.djangoproject.com/en/3.1/ref/contrib/admin/admindocs/
+    DJANGO_APPS.append("django.contrib.admindocs")
+
+    # pip:django-debug-toolbar
+    # Activate Django Debug Toolbar.
+    # Doc: https://django-debug-toolbar.readthedocs.io/
+    # // THIRD_PARTY_APPS.append("debug_toolbar")
+    # // MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")

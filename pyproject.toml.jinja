@@ -1,0 +1,61 @@
+# Metadata Doc: https://www.python.org/dev/peps/pep-0621/
+# Build System Doc: https://www.python.org/dev/peps/pep-0518/
+
+[project]
+name = "[[ PROJECT_SLUG ]]"
+version = "0.1.0"
+[% if PROJECT_DESCRIPTION %]description = "[[ PROJECT_DESCRIPTION ]]"[% endif -%]
+authors = [{name = "[[ AUTHOR_NAME ]]", email = "[[ AUTHOR_EMAIL|replace('@', '+[[ PROJECT_SLUG ]]@') ]]"}]
+readme = "README.md"
+# // license = "MIT"
+# // classifiers = [  # Values: https://pypi.org/classifiers/
+# //   "Development Status :: 4 - Beta",
+# //   "Framework :: Django :: 3.0",
+# //   "Framework :: Django :: 3.1",
+# //   "Intended Audience :: Developers",
+# //   "License :: OSI Approved :: MIT License",
+# //   "Natural Language :: English",
+# //   "Programming Language :: Python",
+# //   "Programming Language :: Python :: 3",
+# //   "Programming Language :: Python :: 3 :: Only",
+# //   "Programming Language :: Python :: 3.9",
+# //   "Topic :: Software Development",
+# // ]
+
+[project.urls]
+# // "Homepage" = "https://example.com"
+# // "Repository" = "https://github.com/username/project-name"
+# // "Documentation" = "https://project-name.readthedocs.io"
+# // "Bug Tracker" = "https://github.com/username/project-name/issues"
+
+[tool.flakehell]  # Doc: https://flakehell.readthedocs.io/
+# TODO: Does it cache it locally? base = ["https://raw.githubusercontent.com/djazz/defaults/master/flakehell.toml"]
+exclude = ["README.md"]
+format = "colored"
+max_line_length = 100  # Footnote: max_line_length
+show_source = true
+
+[tool.flakehell.plugins]
+flake8-bandit = ["+*", "-S322"]
+flake8-bugbear = ["+*"]
+flake8-builtins = ["+*"]
+flake8-comprehensions = ["+*"]
+flake8-darglint = ["+*"]
+flake8-docstrings = ["+*"]
+flake8-eradicate = ["+*"]
+flake8-isort = ["+*"]
+flake8-mutable = ["+*"]
+flake8-pytest-style = ["+*"]
+flake8-spellcheck = ["+*"]             # https://github.com/MichaelAquilina/flake8-spellcheck
+mccabe = ["+*"]
+pep8-naming = ["+*"]
+pycodestyle = ["+*"]
+pyflakes = ["+*"]
+pylint = ["+*"]
+
+
+# FOOTNOTES ========================================================================================
+
+# max_line_length:
+#   - See: http://pylint.pycqa.org/en/stable/technical_reference/features.html#format-checker-options
+#   - See: https://black.readthedocs.io/en/stable/the_black_code_style.html#line-length

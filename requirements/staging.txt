@@ -1,0 +1,7 @@
+# App Mode: staging
+# Packages required for this application mode.
+
+
+# Note: As the staging must be as close as possible to the production environment,
+# we import here its packages instead of the `base` ones.
+-r production.txt

@@ -1,0 +1,35 @@
+# TODO: See: https://github.com/DmytroLitvinov/awesome-flake8-extensions
+
+
+# Extra: qa
+# Packages related to quality assurance.
+# Note: The latest version of all these packages may be installed.
+
+
+# mypy                                 # https://github.com/python/mypy
+
+# CODE FORMAT
+bandit                                 # https://github.com/PyCQA/bandit
+black                                  # https://github.com/psf/black
+flake8                                 # https://github.com/PyCQA/flake8
+flake8-colors                          # https://github.com/and3rson/flake8-colors
+flake8-docstrings                      # https://github.com/PyCQA/flake8-docstrings
+flake8-isort                           # https://github.com/gforcada/flake8-isort
+flake8-polyfill                        # https://gitlab.com/pycqa/flake8-polyfill
+# hacking                              # https://github.com/openstack/hacking
+isort                                  # https://github.com/timothycrosley/isort
+pylint                                 # https://github.com/PyCQA/pylint
+pylint-django                          # https://github.com/PyCQA/pylint-django
+radon                                  # https://github.com/rubik/radon
+
+# CODE COVERAGE
+coverage[toml]                         # https://github.com/nedbat/coveragepy
+django-coverage-plugin                 # https://github.com/nedbat/django_coverage_plugin
+
+# TESTING
+# TODO: factory-boy                          # https://github.com/FactoryBoy/factory_boy
+# TODO: pytest                               # https://github.com/pytest-dev/pytest
+# TODO: pytest-cov                           # https://github.com/pytest-dev/pytest-cov
+# TODO: pytest-django                        # https://github.com/pytest-dev/pytest-django
+# TODO: pytest-sugar                         # https://github.com/Frozenball/pytest-sugar
+# TODO: pytest-xdist                         # https://github.com/pytest-dev/pytest-xdist

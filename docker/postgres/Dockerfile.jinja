@@ -1,0 +1,34 @@
+# Docker image instructions for the `postgres` service for all application modes.
+
+# PostgreSQL on debian:slim
+# Doc: https://hub.docker.com/_/postgres/
+# Dockerfile Ref: https://docs.docker.com/engine/reference/builder/
+
+# Environment variables:
+#   - POSTGRES_DB (default: `POSTGRES_USER`)
+#   - POSTGRES_USER (default: `postgres`)
+#   - POSTGRES_PASSWORD
+#   - POSTGRES_INITDB_ARGS
+#   - POSTGRES_INITDB_WALDIR
+#   - POSTGRES_HOST_AUTH_METHOD
+#   - PGDATA (default: `/var/lib/postgresql/data`)
+
+FROM postgres:[[ POSTGRES_VERSION ]]
+
+
+# INITIALIZATION ===================================================================================
+# From the documentation:
+#   If you would like to do additional initialization in an image derived from this one, add one
+#   or more `*.sql`, `*.sql.gz`, or `*.sh` scripts under `/docker-entrypoint-initdb.d` (creating
+#   the directory if necessary). After the entrypoint calls `initdb` to create the default postgres
+#   user and database, it will run any `*.sql` files, run any executable `*.sh` scripts, and source
+#   any non-executable `*.sh` scripts found in that directory to do further initialization before
+#   starting the service.
+
+# Copy scripts to be executed during the PostgreSQL init process.
+# COPY ./initdb.d/ /docker-entrypoint-initdb.d/
+
+
+# STARTUP ==========================================================================================
+
+# Keep base image defaults.

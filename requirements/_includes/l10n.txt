@@ -1,0 +1,6 @@
+# Extra: l10n
+# Packages related to localization.
+# Note: The latest version of all these packages may be installed.
+
+
+# django-rosetta                       # https://github.com/mbi/django-rosetta

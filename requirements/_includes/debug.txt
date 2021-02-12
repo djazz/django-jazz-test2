@@ -1,0 +1,7 @@
+# Extra: debug
+# Packages related to debugging.
+# Note: The latest version of all these packages may be installed.
+
+
+django-debug-toolbar                   # https://github.com/jazzband/django-debug-toolbar
+werkzeug                               # https://github.com/pallets/werkzeug

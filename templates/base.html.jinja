@@ -1,0 +1,49 @@
+{% load i18n static %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+  <head>
+    {% if APP_MODE != "production" %}<meta name="robots" content="noindex,nofollow">{% endif %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block head_title %}[[ PROJECT_NAME ]]{% endblock head_title %}</title>
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    {% with GFONTS_CSS="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;600;700" %}
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link rel="stylesheet" href="{{ GFONTS_CSS }}&display=swap" media="print"
+        onload="this.media='all'">
+      <link rel="preload" href="{{ GFONTS_CSS }}" as="style">
+      <noscript>
+        <link rel="stylesheet" href="{{ GFONTS_CSS }}&display=swap">
+      </noscript>
+    {% endwith %}
+    {% block css %}
+      {# <link rel="stylesheet" href="{% static "css/app.css" %}"> #}
+    {% endblock css %}
+    <link rel="icon" type="image/x-icon" href="{% static "favicons/favicon.ico" %}">
+    <!--[if lt IE 9]>
+      <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"
+        integrity="sha256-9uAoNWHdszsUDhSXf/rVcWOqKPfi5/8V5R4UdbZle2A="
+        crossorigin="anonymous"></script>
+    <![endif]-->
+  </head>
+  <body class="{% block body_class %}{% endblock body_class %}">
+    {% block base_content %}
+      {% block page_header %}{#% include "_includes/page_header.html" %#}{% endblock page_header %}
+
+      <main>
+        <div class="container">
+          {% block content %}{% endblock content %}
+        </div>
+      </main>
+
+      {% block page_footer %}{#% include "_includes/page_footer.html" %#}{% endblock page_footer %}
+    {% endblock base_content %}
+
+    {% block js %}
+      {# <script src="{% url "js-catalog" %}"></script> #}
+      {# <script src="{% static "js/app.js" %}"></script> #}
+    {% endblock js %}
+
+    {#% include "_includes/analytics.html" %#}
+  </body>
+</html>

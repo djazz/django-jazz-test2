@@ -1,0 +1,335 @@
+#!/usr/bin/env bash
+
+# CONSTANTS ========================================================================================
+
+# TODO: readonly __FILE__="$( readlink -f "${BASH_SOURCE[0]}" )"
+readonly __FILE__="${BASH_SOURCE[0]}"
+readonly BASE_DIR="$( cd "$( dirname "${__FILE__}" )" && pwd )"
+readonly BIN_DIR="${BASE_DIR}/bin"
+readonly VENV_DIR="${BASE_DIR}/.venv"
+readonly DOCKER_DIR="${BASE_DIR}/docker"
+
+declare -r VALID_APP_MODES="local testing development staging production"
+
+
+# HELPERS ==========================================================================================
+
+function print_heading() { printf "\e[1;37m${1}\e[0m\n"; }
+function print_error() { printf "\e[0;31mERROR: ${1}\e[0m\n"; }
+function print_success() { printf "\e[0;32mSuccessfully ${1:-done.}\e[0m\n"; }
+function abort() { printf "Abort. ${1}"; exit; }
+
+function do_usage() {
+  echo "Usage: dj COMMAND"
+}
+
+function load_dotenv() {
+  if [ -f "${BASE_DIR}/.env" ]
+    then source "${BASE_DIR}/.env"
+    else echo "ERROR: Dotenv file not found (${BASE_DIR}/.env)."; exit 1
+  fi
+}
+
+function is_valid_app_mode() {
+  [[ $VALID_APP_MODES =~ (^|[[:space:]])$1($|[[:space:]]) ]] && return 0
+
+  [ -z "$1" ] && error="Missing app mode." || error="Invalid app mode '${1}'."
+  print_error "${error} Values: ${VALID_APP_MODES// /, }."
+  return 1
+}
+
+function _django() {
+  if [ "$DOCKERIZED" = true ]
+    then _docker_exec app python manage.py "$@"
+    else _venv_activate; manage.py "$@"
+  fi
+}
+
+function _django_it() {
+  if [ "$DOCKERIZED" = true ]
+    then _docker_exec_it app python manage.py "$@"
+    else _venv_activate; manage.py "$@"
+  fi
+}
+
+
+# VIRTUALENV =======================================================================================
+
+function _venv_activate() {
+  [ "$VIRTUAL_ENV" = "$VENV_DIR" ] && return
+  [ -n "$VIRTUAL_ENV" ] && { source "${VIRTUAL_ENV}/bin/activate"; deactivate; }
+  [ -d "$VENV_DIR" ] || { print_error "The virtualenv '${VENV_DIR}' does not exist."; exit 1; }
+  source "${VENV_DIR}/bin/activate"
+}
+
+function do_venv-create() {
+  print_heading "Creating the virtualenv '$VENV_DIR'..."
+  python -m venv "$VENV_DIR"
+  _venv_activate
+  pip install --upgrade pip setuptools
+}
+
+function do_venv-remove() {
+  print_heading "Deleting the virtualenv '$VENV_DIR'..."
+  [ "$VIRTUAL_ENV" = "$VENV_DIR" ] && deactivate
+  rm -fr "$VENV_DIR"
+}
+
+
+# DOCKER ===========================================================================================
+# Docker CLI Ref: https://docs.docker.com/engine/reference/commandline/cli/
+# Docker-Compose CLI Ref: https://docs.docker.com/compose/reference/overview/
+
+function _docker_exec() {
+  local service="$1"; shift
+  _docker_compose exec $service $@
+}
+
+function _docker_exec_it() {
+  local service="$1"; shift
+  docker exec -it "${PROJECT_SLUG}-${service}" $@
+}
+
+function _docker_compose() {
+  docker-compose -p "$PROJECT_SLUG" -f "${DOCKER_DIR}/${APP_MODE}.yml" $@
+}
+
+function do_docker-status() {
+  status="$( docker ps )"
+  (( $? > 0 )) && { printf "$status"; exit 1; }
+
+  local filter="${1:-$PROJECT_SLUG}"
+  [ "$filter" = "all" ] && filter=
+
+  echo
+  printf "\e[1;33mDOCKER STATUS"
+  [ -n "$filter" ] && printf " for \e[36m${filter}\e[33m"
+  printf ":\e[0m\n"
+  echo
+  print_heading "CONTAINERS"
+  if [ -z "$filter" ]
+    then docker container ls -a
+    else docker container ls -a | grep -E --color=never "CONTAINER|${filter}"
+  fi
+  echo
+  print_heading "IMAGES"
+  if [ -z "$filter" ]
+    # then docker images
+    # else docker images "$filter"*
+    then docker images
+    else docker images | grep -E --color=never "REPOSITORY|${filter}"
+  fi
+  echo
+  print_heading "VOLUMES"
+  if [ -z "$filter" ]
+    then docker volume ls
+    else docker volume ls | grep -E --color=never "VOLUME NAME|${filter}"
+  fi
+  echo
+  print_heading "NETWORKS"
+  if [ -z "$filter" ]
+    then docker network ls
+    else docker network ls | grep -E --color=never "NETWORK ID|${filter}"
+  fi
+  echo
+}
+
+## Build the Docker images.
+## Usage: dj docker-build APP_MODE [APP_VERSION]
+function do_docker-build() {
+  # local APP_MODE="$1" APP_VERSION="$2"
+  # [ -z "$APP_MODE" ] && load_dotenv
+  # is_valid_app_mode "$APP_MODE" || exit 1
+  [ "$APP_MODE" = "local" ] || { echo "Not yet implemented."; exit 1; }
+
+  print_heading "Building images..."
+  local build_dir="${DOCKER_DIR}/app/build"
+  rm -fr "$build_dir"
+  mkdir -p "$build_dir"
+  cp -a "${BASE_DIR}/requirements" "${build_dir}/"
+  _docker_compose build "$@"
+  rm -fr "$build_dir"
+}
+
+## Start Docker services (all or given ones).
+## Usage: dj docker-start [SERVICE…]`
+function do_docker-start() {
+  print_heading "Starting containers..."
+  _docker_compose up -d "$@"
+}
+
+## Stop Docker services (all or given ones).
+## Usage: dj docker-stop [SERVICE…]
+function do_docker-stop () {
+  print_heading "Stopping containers..."
+  _docker_compose stop "$@"
+}
+
+## Stop Docker services (all or given ones).
+## Usage: dj docker-down [SERVICE…]
+function do_docker-down () {
+  print_heading "Shutting down containers..."
+  _docker_compose down "$@"
+}
+
+## Usage: dj docker-logs [SERVICE…]
+function do_docker-logs () {
+  _docker_compose logs "$@"
+}
+
+## Remove all Docker objects (containers, images, volumes, networks).
+## Usage: dj docker-purge [SERVICE…]
+function do_docker-purge () {
+  local item
+
+  for item in $( docker container ls -a --format "{{.Names}}" | grep --color=never "^${PROJECT_SLUG}" ); do
+    echo "Stopping container '${item}'..."
+    docker container stop "${item}"
+    echo "Deleting container '${item}'..."
+    docker container rm "${item}"
+  done
+
+  for item in $( docker images --format "{{.Repository}}:{{.Tag}}" | grep --color=never "^${PROJECT_SLUG}" ); do
+    echo "Deleting image '${item}'..."
+    docker image rm "$item"
+  done
+
+  for item in $( docker volume ls --format "{{.Name}}" | grep --color=never "^${PROJECT_SLUG}" ); do
+    echo "Deleting volume '${item}'..."
+    docker volume rm "$item"
+  done
+
+  for item in $( docker network ls --format "{{.Name}}" | grep --color=never "^${PROJECT_SLUG}" ); do
+    echo "Deleting network '${item}'..."
+    docker network rm "$item"
+  done
+}
+
+function do_docker-shell() {
+  print_heading "Launching a shell in the '${1}' container..."
+  _docker_exec_it "$1" bash
+}
+
+
+# DATABASE =========================================================================================
+
+function do_db-create() {
+  source "${BASE_DIR}/.envs/.env.postgres"
+  print_heading "Creating the database '${POSTGRES_DB}'..."
+  source "${BIN_DIR}/db-create.sh"
+}
+
+function do_db-remove() {
+  source "${BASE_DIR}/.envs/.env.postgres"
+  print_heading "Deleting the database '${POSTGRES_DB}'..."
+  source "${BIN_DIR}/db-remove.sh"
+}
+
+function do_db-shell() {
+  if [ "$DOCKERIZED" = true ]; then
+    source "${BASE_DIR}/.envs/.env.postgres"
+    print_heading "Launching a database shell..."
+    _docker_exec_it postgres psql -U "$POSTGRES_USER"
+  else
+    manage.py dbshell
+  fi
+}
+
+function do_db-migrate() {
+  print_heading "Applying database migrations..."
+  _django migrate
+}
+
+
+# PIP ==============================================================================================
+
+function do_pip-install() {
+  print_heading "Installing pip packages..."
+  if [ "$DOCKERIZED" = true ]
+    then _docker_exec app /home/django/pip-install.sh
+    else pip install -r "${BASE_DIR}/requirements/${APP_MODE}.txt"
+  fi
+}
+
+function do_pip-outdated() {
+  local cmd_prefix
+  [ "$DOCKERIZED" = true ] && cmd_prefix="_docker_exec app"
+
+  print_heading "Listing outdated pip packages..."
+  $cmd_prefix pip list --outdated --disable-pip-version-check
+}
+
+
+# DEV TOOLS ========================================================================================
+
+function do_server() {
+  if [ "$DOCKERIZED" = true ]
+    then do_docker-start
+    else _django runserver_plus
+  fi
+}
+
+function do_shell() {
+  _django_it shell_plus
+}
+
+function do_manage() {
+  _django_it "$@"
+}
+
+
+# INSTALL ==========================================================================================
+
+function _install_venv() {
+  do_venv-create
+
+  print_heading "Creating symlinks..."
+  cd "${VENV_DIR}/bin/"
+  ln -s ../../dj
+  ln -s ../../manage.py
+  cd - &> /dev/null
+
+  do_db-create
+}
+
+function _install_docker() {
+  do_docker-build
+  do_docker-start
+}
+
+function do_install() {
+  if [ "$DOCKERIZED" = true ]
+    then _install_docker
+    else _install_venv
+  fi
+
+  do_pip-install
+  do_db-migrate
+}
+
+function do_uninstall() {
+  if [ "$DOCKERIZED" = true ]
+    then do_docker-purge
+    else do_venv-remove; do_db-remove
+  fi
+}
+
+
+# SCRIPT EXECUTION =================================================================================
+
+[ -z "$1" ] && { do_usage; exit; }
+
+readonly ORIGINAL_COMMAND="$1"; shift
+readonly COMMAND="$ORIGINAL_COMMAND"
+readonly COMMAND_FUNCTION="do_${COMMAND}"
+
+if [ "$( type -t "$COMMAND_FUNCTION" )" = "function" ]; then
+  load_dotenv
+  $COMMAND_FUNCTION "$@"
+elif [ -f "${BIN_DIR}/${COMMAND}.sh" ]; then
+  load_dotenv
+  source "${BIN_DIR}/${COMMAND}.sh"
+else
+  echo "Unknown command '${ORIGINAL_COMMAND}'."
+  do_usage
+fi

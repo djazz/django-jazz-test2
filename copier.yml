@@ -1,0 +1,66 @@
+PROJECT_NAME:
+  type: str
+  help: "Displayed to users. Format: `Title Case`. Example: `My App`."
+
+PROJECT_SLUG:
+  type: str
+  help: "Project identifier in `lower-dash-case`. Example: `my-app`. Used for the local URL."
+  default: "[[ PROJECT_NAME|lower|replace(' ', '-') ]]"
+
+PROJECT_SNAKE:
+  type: str
+  help: "Short project identifier in `lower_snake_case`. Example: `my_app`. Used for the main Python package."
+  default: "[[ PROJECT_SLUG|replace('-', '_') ]]"
+
+PROJECT_DESCRIPTION:
+  type: str
+  help: "Short project description (for `pyproject.toml`)."
+  default: ""
+
+AUTHOR_NAME:
+  type: str
+  help: "Full name. Example: `John Smith`."
+
+AUTHOR_EMAIL:
+  type: str
+  help: "Email. Example: `john.smith@example.com`. An address_extension `+PROJECT_SLUG@` is automatically added."
+
+ADMIN_BASE_URL:
+  type: str
+  help: "Base URL for the admin interface. /!\ SECURITY: Avoid the default 'admin/'."
+
+USER_TIME_ZONE:
+  type: str
+  default: "Europe/Brussels"
+
+USER_LANGUAGE_CODE:
+  type: str
+  default: "en"
+
+PYTHON_VERSION:
+  type: str
+  default: "3.9.1"
+
+POSTGRES_VERSION:
+  type: str
+  default: "13.1"
+
+DOCKERIZED:
+  type: bool
+  help: "Whether to use Docker."
+  default: yes
+
+
+_templates_suffix: ".jinja"
+_exclude:
+  - "copier.yml"
+  - ".git"
+  - "__pycache__"
+  - "*.py[co]"
+  - ".DS_Store"
+  - "~*"
+_skip_if_exists:
+  - .env
+  - .envs/*
+_tasks:
+  - "git init"

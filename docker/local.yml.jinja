@@ -1,0 +1,124 @@
+# Project: [[ PROJECT_SLUG ]]
+# Version (Docker): 0.1
+# Services: app, postgres
+# App Mode: local
+
+# Docker-Compose Ref: https://docs.docker.com/compose/compose-file/compose-file-v3/
+
+# @TODO
+# To be able to run different deployment environments on the same Docker host, Docker objects names must be different
+# => must use `$APP_MODE` in their name. This must be applied on Volumes and Networks. Services should be fine.
+
+# Required environment variables:
+# - `APP_VERSION`: The version of the app to be installed.
+# - `APP_MODE`: The target deployment environment (will be used for `DJANGO_ENV`).
+
+# Naming conventions:
+# - Images: `[<ORGANIZATION_SLUG>/]<PROJECT_SLUG>-<SERVICE_SLUG>:<DOCKER_VERSION>`
+# - Containers: `<PROJECT_SLUG>-<SERVICE_SLUG>`
+# - Volumes: `<PROJECT_SLUG>-<SERVICE_SLUG>-<VOLUME_SLUG>` or, if not mainly related to a service, `<PROJECT_SLUG>-<SERVICE_SLUG>`
+# - Networks: `<PROJECT_SLUG>-<NETWORK_SLUG>`
+# - For the `app` service, we include the app version:
+#   - Images: `[<ORGANIZATION_SLUG>/]<PROJECT_SLUG>-<SERVICE_SLUG>-<APP_VERSION>:<DOCKER_VERSION>`
+#   - Containers: `<PROJECT_SLUG>-<SERVICE_SLUG>-<APP_VERSION>`
+
+
+version: "3.8"  # Requires Docker Engine 19.03.0+.
+
+
+# VOLUMES ==========================================================================================
+
+volumes:
+
+  # Store databases files.
+  # Used by: postgres.
+  postgres-data:
+    name: [[ PROJECT_SLUG ]]-postgres-data
+
+
+# NETWORKS =========================================================================================
+
+networks:
+
+  # Local services.
+  # Used by: all.
+  local:
+    name: [[ PROJECT_SLUG ]]-local
+
+
+# SERVICES =========================================================================================
+
+services:
+
+  # SERVICE: APP -----------------------------------------------------------------------------------
+  # The main application.
+  app:
+    container_name: [[ PROJECT_SLUG ]]-app
+
+    # If this image does not exist, it will execute the `build` process.
+    image: [[ PROJECT_SLUG ]]-app-local:0.1
+
+    # Configuration options that are applied at build time.
+    build:
+      context: ./app  # Path to the build context. See the `Dockerfile` there.
+      dockerfile: Dockerfile.local
+      args:  # Environment variables for the build time.
+        - APP_MODE=local
+
+    # Environment variables for run time.
+    # /!\ These are not available during build time, see `build › args`.
+    env_file:
+      - ../.envs/.env.app
+      - ../.envs/.env.postgres
+    environment:
+      - APP_MODE=local
+      # Define the host and port as defined here for the `postgres` service.
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=
+
+    # Dependencies between services (=> services are automatically started in dependency order).
+    # Note: Container for the linked service will be reachable at a hostname identical to the alias (or service name).
+    # /!\ Compose will not wait until a container is "ready", only until it's running.
+    # See: https://docs.docker.com/compose/startup-order/
+    depends_on:
+      - postgres
+
+    # Expose ports `"HOST:CONTAINER"`.
+    # Best practice: Always explicitly specifying your port mappings as strings.
+    ports:
+      - "8000:8000"
+
+    # Mount host paths or named volumes.
+    volumes:
+      - ..:/app:z
+
+    # Networks to join.
+    networks:
+      - local
+
+
+  # SERVICE: POSTGRES ------------------------------------------------------------------------------
+  postgres:
+    container_name: [[ PROJECT_SLUG ]]-postgres
+
+    # If this image does not exist, it will execute the `build` process.
+    image: [[ PROJECT_SLUG ]]-postgres:0.1
+
+    # Configuration options that are applied at build time.
+    build:
+      context: ./postgres  # Path to the build context. See the `Dockerfile` there.
+
+    # Environment variables for run time.
+    # /!\ These are not available during build time, see `build › args`.
+    env_file:
+      - ../.envs/.env.postgres
+
+    # Mount host paths or named volumes.
+    volumes:
+      - postgres-data:/var/lib/postgresql/data:Z
+      # TODO: ??? Store PostgreSQL data dir outside the container.
+      # TODO: ??? - ../var/postgres:/var/lib/postgresql/data
+
+    # Networks to join.
+    networks:
+      - local

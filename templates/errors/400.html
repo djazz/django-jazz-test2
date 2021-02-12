@@ -1,0 +1,17 @@
+{% extends "errors/base.html" %}
+{% load i18n %}
+
+{% block head_title %}{% spaceless %}
+  {{ block.super }} | {% trans "Bad Request (400)" context "error heading" %}
+{% endspaceless %}{% endblock head_title %}
+
+{% block body_class %}{{ block.super }} vw-error-400{% endblock body_class %}
+
+{% block content %}
+  <h1>{% trans "Bad Request (400)" context "error heading" %}</h1>
+  <p>
+    {% blocktrans context "error message" trimmed %}
+      The request cannot be fulfilled due to bad syntax.
+    {% endblocktrans %}
+  </p>
+{% endblock content %}

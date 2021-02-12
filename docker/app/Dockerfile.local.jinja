@@ -1,0 +1,38 @@
+# Docker image instructions for the `app` service for the `local` application mode.
+
+# Python on debian:slim
+# Doc: https://hub.docker.com/_/python/
+# Dockerfile Ref: https://docs.docker.com/engine/reference/builder/
+
+FROM python:[[ PYTHON_VERSION ]]-slim
+
+
+# ENVIRONMENT CONFIGURATION ========================================================================
+
+# Get build args.
+ARG APP_MODE
+
+# Ensure Python outputs everything that's printed inside the application rather than buffering it.
+ENV PYTHONUNBUFFERED 1
+
+
+# CONFIGURATION ====================================================================================
+
+# Set the working directory.
+WORKDIR /app
+
+# Copy files.
+# Note: This is done before the volumes defined in the docker-compose file are mounted.
+COPY ./scripts/ /home/django/
+COPY ./build/ /app/
+RUN sed -i 's/\r$//g' /home/django/* \
+    && chmod u+x /home/django/*.sh
+
+# Install this service.
+RUN /home/django/docker-install.sh
+
+
+# STARTUP ==========================================================================================
+
+ENTRYPOINT ["/app/docker/app/scripts/docker-entrypoint.sh"]
+CMD ["/app/docker/app/scripts/docker-start.sh"]

@@ -1,0 +1,23 @@
+{% extends "errors/base.html" %}
+{% load i18n %}
+
+{% block head_title %}{% spaceless %}
+  {{ block.super }} | {% trans "Server Error (500)" context "error heading" %}
+{% endspaceless %}{% endblock head_title %}
+
+{% block body_class %}{{ block.super }} vw-error-500{% endblock body_class %}
+
+{% block content %}
+  <h1>{% trans "Server Error (500)" context "error heading" %}</h1>
+  <h2>{% trans "Looks like something went wrong!" context "error heading" %}</h2>
+  <p>
+    {% blocktrans context "error message" trimmed %}
+      We track these errors automatically, but if the problem persists feel free to contact us.
+    {% endblocktrans %}<br>
+    {% comment %} TODO: Requires a custom template filter/tag.
+    <a href="mailto:{{ "SUPPORT_EMAIL"|settings }}">
+      {% trans "contact our support"|capfirst context "action" %}
+    </a>
+    {% endcomment %}
+  </p>
+{% endblock content %}

@@ -1,0 +1,18 @@
+# Packages shared by all application modes.
+
+
+django~=3.1                            # https://github.com/django/django
+
+django-admin-honeypot~=1.1.0           # https://github.com/dmpayton/django-admin-honeypot
+django-csp~=3.7                        # https://github.com/mozilla/django-csp
+django-environ~=0.4.5                  # https://github.com/joke2k/django-environ
+django-extensions~=3.1.0               # https://github.com/django-extensions/django-extensions
+django-reversion~=3.0.8                # https://github.com/etianen/django-reversion
+
+argon2-cffi~=20.1.0                    # https://github.com/hynek/argon2_cffi
+psycopg2-binary~=2.8.6                 # https://github.com/psycopg/psycopg2
+pytz~=2020.4                           # https://github.com/stub42/pytz
+whitenoise~=5.2.0                      # https://github.com/evansd/whitenoise
+
+pip  # latest                          # https://github.com/pypa/pip
+setuptools  # latest                   # https://github.com/pypa/setuptools

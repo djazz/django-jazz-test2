@@ -1,0 +1,35 @@
+"""Common process to bootstrap the application in `manage.py` and ASGI/WSGI configurations."""
+
+
+def bootstrap():
+    """Bootstrap the application.
+
+    This requires the following environment variables to be defined:
+        - `APP_MODE` (the current application mode); to define `DJANGO_SETTINGS_MODULE`.
+    """
+
+    import os
+    import sys
+    from pathlib import Path
+
+    import environ
+
+    # We are in the `/config` directory.
+    BASE_DIR = Path(__file__).resolve(strict=True).parents[1]
+    DOTENV_FILE = BASE_DIR / ".env"
+
+    # Initialize the environment variables manager.
+    env = environ.Env()
+
+    # Load the `/.env` file, if it exists.
+    if DOTENV_FILE.exists():
+        env.read_env(str(DOTENV_FILE))
+
+    # Note: This raises an exception if the variable is not defined.
+    APP_MODE = env("APP_MODE")
+
+    # Add the `PACKAGE_DIR` (the main directory of this application) to the `PYTHONPATH`.
+    sys.path.insert(0, str(BASE_DIR / "[[ PROJECT_SNAKE ]]"))
+
+    # Define `DJANGO_SETTINGS_MODULE` based on `APP_MODE`.
+    os.environ["DJANGO_SETTINGS_MODULE"] = f"config.settings.{APP_MODE}"

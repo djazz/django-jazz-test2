@@ -1,0 +1,19 @@
+{% extends "errors/base.html" %}
+{% load i18n %}
+
+{% block head_title %}{% spaceless %}
+  {{ block.super }} | {% trans "Page Not Found (404)" context "error heading" %}
+{% endspaceless %}{% endblock head_title %}
+
+{% block body_class %}{{ block.super }} vw-error-404{% endblock body_class %}
+
+{% block content %}
+  <h1>{% trans "Page Not Found (404)" context "error heading" %}</h1>
+  <h2>{% trans "This is not the web page you are looking for." context "error heading" %}</h2>
+  <p>
+    {% blocktrans context "error message" trimmed %}
+      The requested resource could not be found but may be available again in the future.
+    {% endblocktrans %}
+  </p>
+  <p><a href="/">{% trans "back home"|capfirst context "action" %}</a></p>
+{% endblock content %}

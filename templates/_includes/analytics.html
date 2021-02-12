@@ -1,0 +1,12 @@
+{% load dj_guitar %}
+
+{% settings "ANALYTICS_TRACKING_ID" %}
+{% if ANALYTICS_TRACKING_ID and request.COOKIES.cookie_consent == "1" %}
+  <script async src="//www.googletagmanager.com/gtag/js?id={{ ANALYTICS_TRACKING_ID }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', '{{ ANALYTICS_TRACKING_ID }}');
+  </script>
+{% endif %}

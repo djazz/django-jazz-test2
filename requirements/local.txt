@@ -1,0 +1,25 @@
+# App Mode: local
+# Packages required for this application mode.
+
+
+-r _includes/base.txt
+-r _includes/debug.txt
+-r _includes/l10n.txt
+-r _includes/qa.txt
+
+
+ipython                                # https://github.com/ipython/ipython
+pre-commit                             # https://github.com/pre-commit/pre-commit
+
+# DOCS
+mkdocs                                 # https://github.com/mkdocs/mkdocs/
+mkdocs-material                        # https://github.com/squidfunk/mkdocs-material
+
+
+# TODO: ?? devtools[pygments]
+# TODO: ?? importlib-metadata
+# TODO: ?? mandatory-dep
+# TODO: ?? enhancing-dep
+# TODO: ?? jinja2-cli
+# TODO: ?? recommonmark
+# TODO: ?? safety
